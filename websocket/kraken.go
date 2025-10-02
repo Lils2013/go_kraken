@@ -51,6 +51,7 @@ func NewKraken(url string, opts ...KrakenOption) *Kraken {
 
 // Connect to the Kraken API, this should only be called once.
 func (k *Kraken) Connect() error {
+	log.Info("connecting...")
 	if err := k.dial(); err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (k *Kraken) managerThread() {
 	heartbeat := time.NewTicker(k.heartbeatTimeout)
 	defer heartbeat.Stop()
 
-	connect := make(chan struct{})
+	connect := make(chan struct{}, 1)
 	stopListener := make(chan struct{})
 	reconnectCh := make(chan struct{})
 	go k.listenSocket(stopListener, reconnectCh)
@@ -91,6 +92,7 @@ func (k *Kraken) managerThread() {
 		case <-connect:
 			time.Sleep(k.reconnectTimeout)
 
+			log.Info("connecting...")
 			if err := k.dial(); err != nil {
 				log.Error(err)
 				connect <- struct{}{}
@@ -105,6 +107,7 @@ func (k *Kraken) managerThread() {
 			reconnectCh = make(chan struct{})
 			go k.listenSocket(stopListener, reconnectCh)
 		case <-reconnectCh:
+			reconnectCh = make(chan struct{})
 			connect <- struct{}{}
 		case <-k.stop:
 			return
