@@ -107,7 +107,7 @@ func (k *Kraken) managerThread() {
 			reconnectCh = make(chan struct{})
 			go k.listenSocket(stopListener, reconnectCh)
 		case <-reconnectCh:
-			reconnectCh = make(chan struct{})
+			reconnectCh = nil
 			connect <- struct{}{}
 		case <-k.stop:
 			return
